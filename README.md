@@ -6,7 +6,7 @@
 
 VST3 · AU · Standalone — macOS (Apple Silicon и Intel), Windows, Linux. Бесплатно.
 
-### [⬇ Скачать последнюю версию](https://github.com/danilivnsmir-hub/swarmness/releases/latest)
+### [⬇ Скачать](https://github.com/danilivnsmir-hub/swarmness/releases)
 
 ![Swarmness](docs/screenshot-rig.png)
 
@@ -38,7 +38,7 @@ VST3 · AU · Standalone — macOS (Apple Silicon и Intel), Windows, Linux. Б�
 | **SWARM** | хорус, флэнжер, фэйзер, вибе, ротари |
 | **WINGS** | тремоло, ритмический фильтр, статтер |
 | **COMB** · **CARVE** | графический и параметрический эквалайзеры |
-| **HAUNT** | дилей: цифровой, лента, аналог, lo-fi, реверс |
+| **HAUNT** | дилей: цифровой, лента, аналог, реверс |
 | **CRYPT** | реверб: комната, пластина, зал, пружина, шиммер, свой IR |
 
 Плюс тюнер, четыре сцены на пресет, четыре футсвича, MIDI learn и около ста пресетов.

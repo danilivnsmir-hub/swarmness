@@ -1,0 +1,268 @@
+name: Build
+
+# Builds Swarmness for macOS, Windows and Linux, tests it, and (with a tag) publishes the downloads here.
+# Started by hand only.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "What to build: a branch, tag or commit"
+        required: false
+        default: "main"
+      release_tag:
+        description: "Publish a release with this tag (e.g. v0.1.0-beta); empty = build and test only"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+env:
+  PLUGINVAL_STRICTNESS: 10
+  SOURCE: danilivnsmir-hub/swarmness-vst3
+
+jobs:
+  # ---------------------------------------------------------------------------
+  windows:
+    name: Windows (VST3 + Standalone)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SOURCE }}
+          ref: ${{ inputs.ref }}
+          token: ${{ secrets.SWARMNESS_SOURCE_READ }}
+          persist-credentials: false
+
+      - name: Configure and build
+        shell: pwsh
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_CXX_FLAGS="/DWIN32 /D_WINDOWS /GR /EHsc /w" -DCMAKE_C_FLAGS="/DWIN32 /D_WINDOWS /w" -DSWARMNESS_TONE3000_KEY="${{ secrets.TONE3000_PUBLISHABLE_KEY }}" *> configure.log
+          if ($LASTEXITCODE -ne 0) { Get-Content configure.log -Tail 40; exit 1 }
+          cmake --build build --config Release --parallel --target Swarmness_VST3 Swarmness_Standalone SwarmnessTests -- /nologo /verbosity:quiet *> build.log
+          if ($LASTEXITCODE -ne 0) { Select-String -Path build.log -Pattern ' error ' | Select-Object -First 40 | ForEach-Object { $_.Line }; exit 1 }
+          Write-Host "built"
+
+      - name: Tests
+        shell: pwsh
+        run: |
+          & build\SwarmnessTests_artefacts\Release\SwarmnessTests.exe *> tests.log
+          $code = $LASTEXITCODE
+          Select-String -Path tests.log -Pattern '\[FAIL\]|ALL PASSED|FAILED \(' | ForEach-Object { $_.Line }
+          if ($code -ne 0) { Write-Host ("exit code 0x{0:X8}" -f $code); exit 1 }
+
+      - name: pluginval
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://github.com/Tracktion/pluginval/releases/download/v1.0.4/pluginval_Windows.zip -OutFile pluginval.zip
+          Expand-Archive pluginval.zip -DestinationPath pluginval
+          $pvArgs = @("--strictness-level", "$env:PLUGINVAL_STRICTNESS", "--timeout-ms", "600000",
+                    "--output-dir", "pluginval-logs", "build\Swarmness_artefacts\Release\VST3\Swarmness.vst3")
+          $p = Start-Process -FilePath ".\pluginval\pluginval.exe" -ArgumentList $pvArgs -Wait -PassThru -NoNewWindow
+          Write-Host "pluginval exit code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { Get-ChildItem pluginval-logs -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_.FullName -Tail 40 }; exit 1 }
+
+      - name: Installer and zip
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Null }
+          $label = (Select-String -Path CMakeLists.txt -Pattern 'set\(SWARMNESS_VERSION_LABEL "([^"]+)"\)').Matches[0].Groups[1].Value
+          & $iscc /Q "/DAppVersion=$label" "/DBuildDir=$pwd\build\Swarmness_artefacts\Release" "/Odist" packaging\windows\Swarmness.iss
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          New-Item -ItemType Directory -Force -Path dist\zip | Out-Null
+          Copy-Item -Recurse build\Swarmness_artefacts\Release\VST3\Swarmness.vst3 dist\zip\
+          Copy-Item build\Swarmness_artefacts\Release\Standalone\Swarmness.exe dist\zip\
+          Compress-Archive -Path dist\zip\* -DestinationPath dist\Swarmness-Windows-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Swarmness-Windows
+          path: |
+            dist/*.exe
+            dist/*.zip
+
+  # ---------------------------------------------------------------------------
+  macos:
+    name: macOS Universal (VST3 + AU + Standalone)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SOURCE }}
+          ref: ${{ inputs.ref }}
+          token: ${{ secrets.SWARMNESS_SOURCE_READ }}
+          persist-credentials: false
+
+      - name: Configure and build
+        run: |
+          cmake -B build -G Xcode -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_CXX_FLAGS="-w -fno-caret-diagnostics" -DCMAKE_C_FLAGS="-w -fno-caret-diagnostics" \
+                -DSWARMNESS_TONE3000_KEY="${{ secrets.TONE3000_PUBLISHABLE_KEY }}" > configure.log 2>&1 || { tail -40 configure.log; exit 1; }
+          cmake --build build --config Release --parallel --target Swarmness_VST3 Swarmness_AU Swarmness_Standalone SwarmnessTests -- -quiet > build.log 2>&1 \
+            || { grep -E "error:" build.log | head -40; exit 1; }
+          echo "built"
+
+      - name: Tests
+        run: |
+          set +e
+          build/SwarmnessTests_artefacts/Release/SwarmnessTests > tests.log 2>&1
+          code=$?
+          grep -E '\[FAIL\]|ALL PASSED|FAILED \(' tests.log
+          exit $code
+
+      - name: Universal binaries, ad-hoc signature
+        run: |
+          ART=build/Swarmness_artefacts/Release
+          for bin in "$ART/VST3/Swarmness.vst3/Contents/MacOS/Swarmness" "$ART/AU/Swarmness.component/Contents/MacOS/Swarmness" \
+                     "$ART/Standalone/Swarmness.app/Contents/MacOS/Swarmness"; do
+            lipo "$bin" -verify_arch arm64 x86_64
+          done
+          for b in "$ART/VST3/Swarmness.vst3" "$ART/AU/Swarmness.component" "$ART/Standalone/Swarmness.app"; do
+            codesign --force --deep --sign - "$b"
+          done
+
+      - name: pluginval and auval
+        run: |
+          curl -sSL -o pluginval.zip https://github.com/Tracktion/pluginval/releases/download/v1.0.4/pluginval_macOS.zip
+          unzip -q pluginval.zip
+          PV=pluginval.app/Contents/MacOS/pluginval
+          mkdir -p ~/Library/Audio/Plug-Ins/Components
+          cp -R build/Swarmness_artefacts/Release/AU/Swarmness.component ~/Library/Audio/Plug-Ins/Components/
+          killall -9 AudioComponentRegistrar 2>/dev/null || true
+          $PV --strictness-level $PLUGINVAL_STRICTNESS --validate-in-process --timeout-ms 600000 build/Swarmness_artefacts/Release/VST3/Swarmness.vst3 > pv-vst3.log 2>&1 || { tail -40 pv-vst3.log; exit 1; }
+          $PV --strictness-level $PLUGINVAL_STRICTNESS --validate-in-process --timeout-ms 600000 ~/Library/Audio/Plug-Ins/Components/Swarmness.component > pv-au.log 2>&1 || { tail -40 pv-au.log; exit 1; }
+          auval -strict -v aufx SwMs OpAu > auval.log 2>&1 || { tail -40 auval.log; exit 1; }
+          echo "pluginval (VST3, AU) and auval passed"
+
+      - name: Installer and zips
+        run: |
+          VERSION=$(sed -nE 's/^project\(Swarmness VERSION ([0-9.]+).*/\1/p' CMakeLists.txt)
+          LABEL=$(sed -nE 's/^set\(SWARMNESS_VERSION_LABEL "([^"]+)"\).*/\1/p' CMakeLists.txt)
+          packaging/macos/make_pkg.sh "$VERSION" build/Swarmness_artefacts/Release dist "$LABEL" > /dev/null
+          (cd build/Swarmness_artefacts/Release && ditto -c -k --keepParent VST3/Swarmness.vst3 ../../../dist/Swarmness-macOS-VST3.zip \
+            && ditto -c -k --keepParent AU/Swarmness.component ../../../dist/Swarmness-macOS-AU.zip \
+            && ditto -c -k --keepParent Standalone/Swarmness.app ../../../dist/Swarmness-macOS-Standalone.zip)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Swarmness-macOS
+          path: |
+            dist/*.pkg
+            dist/*.zip
+
+  # ---------------------------------------------------------------------------
+  linux:
+    name: Linux (VST3 + Standalone)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SOURCE }}
+          ref: ${{ inputs.ref }}
+          token: ${{ secrets.SWARMNESS_SOURCE_READ }}
+          persist-credentials: false
+
+      - name: Dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build libasound2-dev libjack-jackd2-dev libfreetype6-dev libfontconfig1-dev \
+            libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev \
+            libglu1-mesa-dev mesa-common-dev xvfb libcurl4-openssl-dev > /dev/null
+
+      - name: Configure and build
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-w -fno-diagnostics-show-caret" -DCMAKE_C_FLAGS="-w -fno-diagnostics-show-caret" \
+                -DSWARMNESS_TONE3000_KEY="${{ secrets.TONE3000_PUBLISHABLE_KEY }}" > configure.log 2>&1 || { tail -40 configure.log; exit 1; }
+          cmake --build build --target Swarmness_VST3 Swarmness_Standalone SwarmnessTests > build.log 2>&1 || { grep -E "error:" build.log | head -40; exit 1; }
+          echo "built"
+
+      - name: Tests
+        run: |
+          set +e
+          build/SwarmnessTests_artefacts/Release/SwarmnessTests > tests.log 2>&1
+          code=$?
+          grep -E '\[FAIL\]|ALL PASSED|FAILED \(' tests.log
+          exit $code
+
+      - name: pluginval
+        run: |
+          curl -sSL -o pluginval.zip https://github.com/Tracktion/pluginval/releases/download/v1.0.4/pluginval_Linux.zip
+          unzip -q pluginval.zip
+          run() { xvfb-run -a ./pluginval --strictness-level $PLUGINVAL_STRICTNESS --validate-in-process --timeout-ms 600000 build/Swarmness_artefacts/Release/VST3/Swarmness.vst3 > "$1" 2>&1; }
+          # pluginval's own VST3 host sometimes crashes on Linux (a RunLoop race in the host, not the plug-in):
+          # a second run decides
+          run pv.log || { echo "pluginval: first run failed, running it once more"; run pv2.log || { tail -40 pv2.log; exit 1; }; }
+          echo "pluginval passed"
+
+      - name: Package
+        run: |
+          mkdir -p dist
+          (cd build/Swarmness_artefacts/Release && zip -qr ../../../dist/Swarmness-Linux-x64.zip VST3/Swarmness.vst3 Standalone/Swarmness)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Swarmness-Linux
+          path: dist/*.zip
+
+  linux-asan:
+    name: Linux tests under AddressSanitizer
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SOURCE }}
+          ref: ${{ inputs.ref }}
+          token: ${{ secrets.SWARMNESS_SOURCE_READ }}
+          persist-credentials: false
+
+      - name: Dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build libasound2-dev libjack-jackd2-dev libfreetype6-dev libfontconfig1-dev \
+            libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev \
+            libglu1-mesa-dev mesa-common-dev libcurl4-openssl-dev > /dev/null
+
+      - name: Build and test
+        run: |
+          cmake -B build-asan -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_FLAGS="-w -fno-diagnostics-show-caret -fsanitize=address -fno-omit-frame-pointer" \
+                -DCMAKE_C_FLAGS="-w -fsanitize=address -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" > configure.log 2>&1 || { tail -40 configure.log; exit 1; }
+          cmake --build build-asan --target SwarmnessTests > build.log 2>&1 || { grep -E "error:" build.log | head -40; exit 1; }
+          set +e
+          ASAN_OPTIONS=detect_leaks=0 build-asan/SwarmnessTests_artefacts/RelWithDebInfo/SwarmnessTests > tests.log 2>&1
+          code=$?
+          grep -E '\[FAIL\]|ALL PASSED|FAILED \(|ERROR: AddressSanitizer|SUMMARY' tests.log
+          exit $code
+
+  # ---------------------------------------------------------------------------
+  release:
+    name: Release
+    if: inputs.release_tag != ''
+    needs: [ windows, macos, linux ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SOURCE }}
+          ref: ${{ inputs.ref }}
+          token: ${{ secrets.SWARMNESS_SOURCE_READ }}
+          persist-credentials: false
+          sparse-checkout: docs/releases
+          path: src
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release_tag }}
+        run: |
+          notes="src/docs/releases/${TAG}.md"
+          [ -f "$notes" ] || { echo "Swarmness ${TAG#v}" > notes.md; notes=notes.md; }
+          pre=""; case "$TAG" in *-*) pre="--prerelease";; esac
+          gh release create "$TAG" --repo "${{ github.repository }}" --title "Swarmness ${TAG#v}" --notes-file "$notes" $pre dist/*

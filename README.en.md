@@ -6,7 +6,7 @@
 
 VST3 · AU · Standalone - macOS (Apple Silicon and Intel), Windows, Linux. Free.
 
-### [⬇ Download the latest version](https://github.com/danilivnsmir-hub/swarmness/releases/latest)
+### [⬇ Download](https://github.com/danilivnsmir-hub/swarmness/releases)
 
 ![Swarmness](docs/screenshot-rig.png)
 
@@ -38,7 +38,7 @@ Thirteen blocks in one chain. Drag the tiles to change their order.
 | **SWARM** | chorus, flanger, phaser, vibe, rotary |
 | **WINGS** | tremolo, rhythmic filter, stutter |
 | **COMB** · **CARVE** | graphic and parametric EQs |
-| **HAUNT** | delay: digital, tape, analog, lo-fi, reverse |
+| **HAUNT** | delay: digital, tape, analog, reverse |
 | **CRYPT** | reverb: room, plate, hall, spring, shimmer, your own IR |
 
 Plus a tuner, four scenes per preset, four footswitches, MIDI learn and about a hundred presets.
