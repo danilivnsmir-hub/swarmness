@@ -73,8 +73,12 @@ Then re-scan plug-ins in your DAW. Without a DAW, play through the **Swarmness**
 
 You need any DAW that hosts VST3 or AU, or you can run it as a standalone app.
 
+## Support
+
+Swarmness is free. If it is useful to you, you can support it on [Boosty](https://boosty.to/insectaudio).
+
 ## Licence
 
-© 2026 Insect Audio. All rights reserved.
+© 2026 Insect Audio - the name under which the author publishes Swarmness. All rights reserved.
 
 Swarmness is free for personal use and for making music, commercial recordings and shows included. You may not redistribute, sell, decompile or modify it - share a link to this page instead. Full terms are in [LICENSE](LICENSE); third-party components are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
