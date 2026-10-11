@@ -14,7 +14,7 @@ VST3 · AU · Standalone - macOS (Apple Silicon and Intel), Windows, Linux. Free
 <summary>More screenshots</summary>
 
 ![HONEY - compressor](docs/screenshot-honey.png)
-![HIVE - harmonies and melodies of repeats](docs/screenshot-hive.png)
+![HIVE - harmonies and repeats](docs/screenshot-hive.png)
 ![SHIFT - pitch shifter](docs/screenshot-shift.png)
 ![HAUNT - delay](docs/screenshot-delay.png)
 ![CRYPT - reverb](docs/screenshot-crypt.png)
@@ -31,7 +31,7 @@ Thirteen blocks in one chain. Drag the tiles to change their order.
 | **HONEY** | compressor / sustainer |
 | **SMOKE** | fuzz |
 | **SHIFT** | pitch shifter on footswitches: octaves down and up, dives |
-| **HIVE** | harmonies and pitch-shifting repeats: ladders, melodies of repeats in key, a metallic spiral |
+| **HIVE** | harmonies and pitch-shifting repeats |
 | **WASP** | overdrive / boost, four characters |
 | **AMP** | three amps (CLEAN, CRUNCH, LEAD) and your NAM captures; two rigs, A / B |
 | **CAB** | miked cabinets or your IRs |
@@ -55,14 +55,13 @@ Then re-scan plug-ins in your DAW. Without a DAW, play through the **Swarmness**
 
 ## Getting started
 
-- **Presets.** The arrows in the header step through presets; click the name to open the browser. The first categories hold presets with four scenes each - a good place to start.
+- **Presets.** The arrows in the header step through presets; click the name to open the browser. Start with the **Start here** category.
 - **Scenes A-D** are different sounds of one preset (verse, chorus, solo...). Double-click a scene to rename it.
 - **Footswitches.** **SHIFT A / B** shift the pitch; **VENOM** and **STING** switch whatever you wire to them (right-click a footswitch). **MOMENTARY / LATCH** sets whether they act while held or until pressed again.
 - **The chain.** Click a tile to open the block's page, drag it to reorder, click the tile's LED to switch the block on or off.
 - **?** in the header turns on help: tap any control to see what it does.
 - **Undo.** The arrows in the header, or **Cmd/Ctrl+Z**.
 - **TUNE** opens the tuner.
-- **LOOP** (under the OUT meter) is a looper: tap = record, tap = the loop plays, tap = overdub; double tap = stop, hold = clear. It keeps playing whatever you switch.
 - **MIDI.** Right-click any control → **MIDI Learn**, then press a pedal or turn a controller.
 - **NAM and IRs.** Drop a `.nam` on the AMP page or a `.wav` on the CAB page.
 
