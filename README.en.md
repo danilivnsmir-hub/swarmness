@@ -14,7 +14,7 @@ VST3 · AU · Standalone - macOS (Apple Silicon and Intel), Windows, Linux. Free
 <summary>More screenshots</summary>
 
 ![HONEY - compressor](docs/screenshot-honey.png)
-![HIVE - octaves and harmonies](docs/screenshot-hive.png)
+![HIVE - harmonies and melodies of repeats](docs/screenshot-hive.png)
 ![SHIFT - pitch shifter](docs/screenshot-shift.png)
 ![HAUNT - delay](docs/screenshot-delay.png)
 ![CRYPT - reverb](docs/screenshot-crypt.png)
@@ -31,7 +31,7 @@ Thirteen blocks in one chain. Drag the tiles to change their order.
 | **HONEY** | compressor / sustainer |
 | **SMOKE** | fuzz |
 | **SHIFT** | pitch shifter on footswitches: octaves down and up, dives |
-| **HIVE** | octaves and harmonies over your signal, with regeneration |
+| **HIVE** | harmonies and pitch-shifting repeats: ladders, melodies of repeats in key, a metallic spiral |
 | **WASP** | overdrive / boost, four characters |
 | **AMP** | three amps (CLEAN, CRUNCH, LEAD) and your NAM captures; two rigs, A / B |
 | **CAB** | miked cabinets or your IRs |
@@ -41,7 +41,7 @@ Thirteen blocks in one chain. Drag the tiles to change their order.
 | **HAUNT** | delay: digital, tape, analog, reverse |
 | **CRYPT** | reverb: room, plate, hall, spring, shimmer, your own IR |
 
-Plus a tuner, four scenes per preset, four footswitches, MIDI learn and about a hundred presets.
+Plus a looper, a tuner, four scenes per preset, four footswitches, MIDI learn and about a hundred presets.
 
 ## Install
 
@@ -62,6 +62,7 @@ Then re-scan plug-ins in your DAW. Without a DAW, play through the **Swarmness**
 - **?** in the header turns on help: tap any control to see what it does.
 - **Undo.** The arrows in the header, or **Cmd/Ctrl+Z**.
 - **TUNE** opens the tuner.
+- **LOOP** (under the OUT meter) is a looper: tap = record, tap = the loop plays, tap = overdub; double tap = stop, hold = clear. It keeps playing whatever you switch.
 - **MIDI.** Right-click any control → **MIDI Learn**, then press a pedal or turn a controller.
 - **NAM and IRs.** Drop a `.nam` on the AMP page or a `.wav` on the CAB page.
 
