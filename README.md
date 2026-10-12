@@ -47,6 +47,13 @@ VST3 · AU · Standalone — macOS (Apple Silicon и Intel), Windows, Linux. Б�
 
 **macOS.** Откройте `Swarmness-…-macOS-Universal.pkg`. Плагин ставится в `/Library/Audio/Plug-Ins`. Сборки не нотаризованы Apple, поэтому macOS может не дать открыть установщик. Тогда откройте **Системные настройки → Конфиденциальность и безопасность** и нажмите **«Всё равно открыть»**.
 
+Или снимите карантин в Терминале: первая строка — для установщика (до запуска), вторая — для уже установленного плагина, если DAW его не загружает.
+
+```bash
+xattr -dr com.apple.quarantine ~/Downloads/Swarmness-*.pkg
+sudo xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/Swarmness.vst3 /Library/Audio/Plug-Ins/Components/Swarmness.component /Applications/Swarmness.app
+```
+
 **Windows.** Запустите `Swarmness-…-Windows-x64-Setup.exe`. VST3 ставится в `C:\Program Files\Common Files\VST3`.
 
 **Linux.** Распакуйте `Swarmness-Linux-x64.zip`: `Swarmness.vst3` положите в `~/.vst3/`, приложение — куда удобно.

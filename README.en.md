@@ -47,6 +47,13 @@ Plus a looper, a tuner, four scenes per preset, four footswitches, MIDI learn an
 
 **macOS.** Open `Swarmness-…-macOS-Universal.pkg`; it installs to `/Library/Audio/Plug-Ins`. The builds are not notarized by Apple, so macOS may refuse to open the installer. If it does, go to **System Settings → Privacy & Security** and click **Open Anyway**.
 
+Or clear the quarantine flag in Terminal: the first line is for the installer (before opening it), the second for the installed plug-in if your DAW will not load it.
+
+```bash
+xattr -dr com.apple.quarantine ~/Downloads/Swarmness-*.pkg
+sudo xattr -dr com.apple.quarantine /Library/Audio/Plug-Ins/VST3/Swarmness.vst3 /Library/Audio/Plug-Ins/Components/Swarmness.component /Applications/Swarmness.app
+```
+
 **Windows.** Run `Swarmness-…-Windows-x64-Setup.exe`. The VST3 goes to `C:\Program Files\Common Files\VST3`.
 
 **Linux.** Unzip `Swarmness-Linux-x64.zip`: put `Swarmness.vst3` in `~/.vst3/` and the app wherever you like.
