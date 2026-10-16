@@ -35,6 +35,19 @@ jobs:
           token: ${{ secrets.SWARMNESS_SOURCE_READ }}
           persist-credentials: false
 
+      # ASIO in the Windows app: Steinberg's ASIO SDK under its proprietary licence agreement (never the
+      # GPL one). Off until the repo variable SWARMNESS_ASIO is 1 (set it once the agreement is signed).
+      - name: ASIO SDK
+        if: ${{ vars.SWARMNESS_ASIO == '1' }}
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://www.steinberg.net/asiosdk -OutFile asiosdk.zip
+          Expand-Archive asiosdk.zip -DestinationPath "$env:RUNNER_TEMP\asiosdk"
+          $h = Get-ChildItem "$env:RUNNER_TEMP\asiosdk" -Recurse -Filter iasiodrv.h | Select-Object -First 1
+          if (-not $h) { Write-Host "no iasiodrv.h in the ASIO SDK"; exit 1 }
+          "SWARMNESS_ASIO_SDK=$($h.Directory.Parent.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "ASIO SDK: $($h.Directory.Parent.FullName)"
+
       - name: Configure and build
         shell: pwsh
         run: |
